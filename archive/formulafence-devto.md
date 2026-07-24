@@ -12,7 +12,7 @@ That tool is [FormulaFence](https://github.com/SybilGambleyyu/formulafence), an 
 
 FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility, defined-name and Excel-table definition changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
 
-For every changed cell, it follows statically visible A1-style, ordinary named-range, and supported table dependencies and reports downstream formula cells with deterministic shortest-path samples.
+For every changed cell, it follows statically visible A1-style, ordinary named-range, supported table, and direct 3-D worksheet dependencies and reports downstream formula cells with deterministic shortest-path samples.
 
 ```bash
 formulafence check approved.xlsx candidate.xlsx \
@@ -32,6 +32,7 @@ rules:
   no_new_unresolved_references: true
   no_new_dynamic_references: true
   no_table_definition_changes: true
+  no_3d_reference_scope_changes: true
   max_downstream_impact: 100
 
 protected_cells:
@@ -40,7 +41,9 @@ protected_cells:
 
 ## Fail closed when the analysis has a blind spot
 
-FormulaFence 0.5.0 resolves ordinary workbook and sheet-local names with static A1 destinations, plus a conservative set of Excel-table references: table names, static columns or contiguous column ranges, and `#All`/`#Data`/`#Headers`/`#Totals` regions. Profiles inventory the table definitions behind those references, and a diff emits `FF013` if one changes; `no_table_definition_changes` can make that a hard boundary.
+FormulaFence 0.6.0 resolves ordinary workbook and sheet-local names with static A1 destinations, plus a conservative set of Excel-table references: table names, static columns or contiguous column ranges, and `#All`/`#Data`/`#Headers`/`#Totals` regions. Profiles inventory the table definitions behind those references, and a diff emits `FF013` if one changes; `no_table_definition_changes` can make that a hard boundary.
+
+It also expands a direct internal 3-D A1 reference such as `Jan:Mar!B2` across every worksheet tab between its endpoints. Profiles identify those formulas. Since inserting, moving, or removing a tab can change that span without changing the formula text, a diff emits `FF014`; `no_3d_reference_scope_changes` can make that a hard boundary. This follows [Excel's documented 3-D-reference behavior](https://support.microsoft.com/en-us/excel/create-a-3-d-reference-to-the-same-cell-range-on-multiple-worksheets). External, malformed, endpoint-missing, and non-A1 variants remain explicit coverage limits rather than guessed dependencies.
 
 It now traces common row-scoped forms without turning a row calculation into a dependency on every row of a table. Inside a table data cell, `[@[Sales Amount]]` and `[Sales Amount]` bind to that row. Qualified forms such as `Sales[@Amount]` and `Sales[[#This Row],[Amount]:[Rate]]` bind to the named table's data row even from an adjacent cell. That follows [Excel's documented structured-reference semantics](https://support.microsoft.com/en-us/excel/using-structured-references-with-excel-tables); header, total, cross-sheet, ambiguous, and complex bracket-escape cases remain coverage notes instead of guessed dependency paths.
 
@@ -62,4 +65,4 @@ FormulaFence does not calculate Excel or prove a financial model correct. Materi
 
 But a review process should at least make it hard to silently replace a formula with a number. That is the narrow, useful boundary FormulaFence is built to enforce.
 
-The current release is [FormulaFence 0.5.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.5.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
+The current release is [FormulaFence 0.6.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.6.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
