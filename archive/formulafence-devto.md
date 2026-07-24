@@ -12,7 +12,7 @@ That tool is [FormulaFence](https://github.com/SybilGambleyyu/formulafence), an 
 
 FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility, defined-name and Excel-table definition changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
 
-For every changed cell, it follows statically visible A1-style, ordinary named-range, safely expandable formula-defined-name and named `LAMBDA`, `LET`/inline-`LAMBDA`, supported table, and direct 3-D worksheet dependencies and reports downstream formula cells with deterministic shortest-path samples.
+For every changed cell, it follows statically visible A1-style, ordinary named-range, safely expandable formula-defined-name and named `LAMBDA`, direct dynamic-array spill anchors, `LET`/inline-`LAMBDA`, supported table, and direct 3-D worksheet dependencies and reports downstream formula cells with deterministic shortest-path samples.
 
 ```bash
 formulafence check approved.xlsx candidate.xlsx \
@@ -41,7 +41,7 @@ protected_cells:
 
 ## Fail closed when the analysis has a blind spot
 
-FormulaFence 0.9.0 resolves ordinary workbook and sheet-local names with static A1 destinations, plus a conservative set of Excel-table references: table names, static columns or contiguous column ranges, and `#All`/`#Data`/`#Headers`/`#Totals` regions. Profiles inventory the table definitions behind those references, and a diff emits `FF013` if one changes; `no_table_definition_changes` can make that a hard boundary.
+FormulaFence 0.10.0 resolves ordinary workbook and sheet-local names with static A1 destinations, plus a conservative set of Excel-table references: table names, static columns or contiguous column ranges, and `#All`/`#Data`/`#Headers`/`#Totals` regions. Profiles inventory the table definitions behind those references, and a diff emits `FF013` if one changes; `no_table_definition_changes` can make that a hard boundary.
 
 It also expands a direct internal 3-D A1 reference such as `Jan:Mar!B2` across every worksheet tab between its endpoints. Profiles identify those formulas. Since inserting, moving, or removing a tab can change that span without changing the formula text, a diff emits `FF014`; `no_3d_reference_scope_changes` can make that a hard boundary. This follows [Excel's documented 3-D-reference behavior](https://support.microsoft.com/en-us/excel/create-a-3-d-reference-to-the-same-cell-range-on-multiple-worksheets). External, malformed, endpoint-missing, and non-A1 variants remain explicit coverage limits rather than guessed dependencies.
 
@@ -51,9 +51,11 @@ Version 0.8.0 removes a common modern false gap: `LET` names and inline `LAMBDA`
 
 Version 0.9.0 follows a named `LAMBDA` only when its whole definition is static and internal. A caller such as `=ToCelsius(A2)` retains its `A2` edge and gains the function body's static inputs; nested named functions and formula-defined names that call one work the same way. It respects workbook and worksheet-local scope, and recognizes both ordinary Name Manager text and the `_xlfn.LAMBDA`/`_xlpm.`/`_xlop.` OOXML spelling emitted by Excel-compatible writers. That is the same named-function model described in [Excel's LAMBDA documentation](https://support.microsoft.com/en-us/excel/functions/lambda-function). Recursive, dynamic, relative, external, 3-D, and tokenizer-unsupported definitions remain explicit coverage notes rather than guessed graph edges.
 
+Version 0.10.0 traces the anchor behind a direct internal spill reference such as `=SUM(A1#)` or its stored OOXML form `=SUM(_xlfn.ANCHORARRAY(A1))`. The anchor edge captures changes to its formula and visible upstream inputs; profiles retain the spill token, and `FF015`/`no_new_spill_references` let CI make the partial boundary explicit. It does not invent a dynamic spill extent or dependency on every possible blocker, so external, 3-D, range, named, implicit-intersection, and malformed spill forms stay visible limits. A spill-bearing formula-defined name remains unresolved at its caller. This follows Excel's [spilled-range operator](https://support.microsoft.com/en-us/excel/guidelines-and-examples-of-array-formulas), while recognizing the OOXML spelling used by [Excel-compatible writers](https://xlsxwriter.readthedocs.io/working_with_formulas.html). A formula the underlying tokenizer cannot inspect is now listed by location and emits `FF016`; `no_new_tokenization_failures` can make that a CI boundary too.
+
 It now traces common row-scoped forms without turning a row calculation into a dependency on every row of a table. Inside a table data cell, `[@[Sales Amount]]` and `[Sales Amount]` bind to that row. Qualified forms such as `Sales[@Amount]` and `Sales[[#This Row],[Amount]:[Rate]]` bind to the named table's data row even from an adjacent cell. That follows [Excel's documented structured-reference semantics](https://support.microsoft.com/en-us/excel/using-structured-references-with-excel-tables); header, total, cross-sheet, ambiguous, and complex bracket-escape cases remain coverage notes instead of guessed dependency paths.
 
-One practical safeguard is coverage visibility. When the workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds one can be rejected with `no_new_parser_warnings`. Profiles also list unresolved range tokens and dynamic reference functions; a change can be rejected with `no_new_unresolved_references` or `no_new_dynamic_references`.
+One practical safeguard is coverage visibility. When the workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds one can be rejected with `no_new_parser_warnings`. Profiles also list unresolved range tokens, dynamic reference functions, spill references, and formulas the tokenizer could not inspect; a change can be rejected with `no_new_unresolved_references`, `no_new_dynamic_references`, `no_new_spill_references`, or `no_new_tokenization_failures`.
 
 ## Test beyond toy files
 
@@ -67,8 +69,8 @@ Those results are a compatibility demonstration, not a claim that the source mod
 
 ## What it does not claim
 
-FormulaFence does not calculate Excel or prove a financial model correct. Material models still need a qualified owner, recalculation in the approved spreadsheet engine, and independent review. Relative, cyclic, external, and tokenizer-unsupported name definitions, unsupported or ambiguous table syntax, spilled ranges, non-static named LAMBDAs, arbitrary custom functions, and features such as `INDIRECT` remain coverage limits rather than guessed graph edges.
+FormulaFence does not calculate Excel or prove a financial model correct. Material models still need a qualified owner, recalculation in the approved spreadsheet engine, and independent review. Relative, cyclic, external, and tokenizer-unsupported name definitions, unsupported or ambiguous table syntax, spill extents and blocking cells, non-static named LAMBDAs, arbitrary custom functions, and features such as `INDIRECT` remain coverage limits rather than guessed graph edges.
 
 But a review process should at least make it hard to silently replace a formula with a number. That is the narrow, useful boundary FormulaFence is built to enforce.
 
-The current release is [FormulaFence 0.9.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.9.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
+The current release is [FormulaFence 0.10.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.10.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
