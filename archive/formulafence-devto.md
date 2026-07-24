@@ -10,7 +10,7 @@ That tool is [FormulaFence](https://github.com/SybilGambleyyu/formulafence), an 
 
 ## Put the control at the merge boundary
 
-FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility, defined-name and Excel-table definition changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
+FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility, defined-name, Excel-table, and data-validation control changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
 
 For every changed cell, it follows statically visible A1-style, ordinary named-range, safely expandable formula-defined-name and named `LAMBDA`, direct dynamic-array spill anchors, fixed legacy-CSE outputs, currently observed dynamic-array output members, `LET`/inline-`LAMBDA`, supported table, and direct 3-D worksheet dependencies and reports downstream formula cells with deterministic shortest-path samples.
 
@@ -37,6 +37,7 @@ rules:
   no_array_formula_semantics_changes: true
   no_new_tokenization_failures: true
   no_table_definition_changes: true
+  no_data_validation_changes: true
   no_3d_reference_scope_changes: true
   max_downstream_impact: 100
 
@@ -64,9 +65,11 @@ Version 0.12.0 closes a quieter graph gap in old but still material models. A le
 
 Version 0.13.0 closes the corresponding modern gap without pretending a dynamic spill is fixed. A dynamic-array anchor’s OOXML range is a current observation, not a promise about the next recalculation: Excel can grow, shrink, or block the spill. When a static formula currently reads a non-anchor member such as `B2`, FormulaFence now adds a compact anchor-to-consumer edge and records both the observed range and consumer in the profile. That lets an input change reach `=B2*10` and `=SUM(B2:B3)` through the dynamic anchor, without materializing every spill cell. A new observed output-member relationship emits `FF019`; `no_new_dynamic_array_output_references` turns it into the fail-closed `FFP019` policy boundary. The implementation was checked against an independently maintained XlsxWriter 3.2.9 workbook and keeps a declared `B1:XFD1048576` range compact.
 
+Version 0.14.0 makes data-entry controls reviewable too. A worksheet validation can restrict a whole column, source a list from another sheet, show an input prompt, or block an invalid entry; all of those can materially change a model’s operating boundary without altering a formula cell. FormulaFence now inventories compact target ranges and effective validation settings, normalizes equivalent OOXML defaults, criterion spelling, and target grouping so compatible writers do not create noise, and emits `FF020` for a real change. Profiles redact validation formulas and prompt/error text; the local change report preserves full before/after evidence. Teams can make the surface fail closed with `no_data_validation_changes` (`FFP020`). It deliberately does not evaluate a validation formula or predict whether Excel will accept an entry. The behavior was checked against an independently maintained XlsxWriter workbook and follows [Microsoft’s data-validation guidance](https://support.microsoft.com/en-US/Excel/get-started/apply-data-validation-to-cells).
+
 It now traces common row-scoped forms without turning a row calculation into a dependency on every row of a table. Inside a table data cell, `[@[Sales Amount]]` and `[Sales Amount]` bind to that row. Qualified forms such as `Sales[@Amount]` and `Sales[[#This Row],[Amount]:[Rate]]` bind to the named table's data row even from an adjacent cell. That follows [Excel's documented structured-reference semantics](https://support.microsoft.com/en-us/excel/using-structured-references-with-excel-tables); header, total, cross-sheet, ambiguous, and complex bracket-escape cases remain coverage notes instead of guessed dependency paths.
 
-One practical safeguard is coverage visibility. When the workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds one can be rejected with `no_new_parser_warnings`. Profiles also list unresolved range tokens, dynamic reference functions, spill references, explicit implicit intersection, dynamic and unclassified array anchors, observed dynamic output-member relationships, and formulas the tokenizer could not inspect; a change can be rejected with `no_new_unresolved_references`, `no_new_dynamic_references`, `no_new_spill_references`, `no_new_dynamic_array_output_references`, `no_new_implicit_intersections`, `no_array_formula_semantics_changes`, or `no_new_tokenization_failures`.
+One practical safeguard is coverage visibility. When the workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds one can be rejected with `no_new_parser_warnings`. Profiles also list unresolved range tokens, dynamic reference functions, spill references, explicit implicit intersection, dynamic and unclassified array anchors, observed dynamic output-member relationships, and formulas the tokenizer could not inspect; a change can be rejected with `no_new_unresolved_references`, `no_new_dynamic_references`, `no_new_spill_references`, `no_new_dynamic_array_output_references`, `no_new_implicit_intersections`, `no_array_formula_semantics_changes`, `no_data_validation_changes`, or `no_new_tokenization_failures`.
 
 ## Test beyond toy files
 
@@ -84,4 +87,4 @@ FormulaFence does not calculate Excel or prove a financial model correct. Materi
 
 But a review process should at least make it hard to silently replace a formula with a number. That is the narrow, useful boundary FormulaFence is built to enforce.
 
-The current release is [FormulaFence 0.13.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.13.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
+The current release is [FormulaFence 0.14.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.14.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
