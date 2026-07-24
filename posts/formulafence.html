@@ -30,7 +30,7 @@
 
       <h2>The merge boundary is where trust gets practical</h2>
 
-      <p><a href="https://github.com/SybilGambleyyu/formulafence">FormulaFence</a> compares two <code>.xlsx</code> or <code>.xlsm</code> workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility and defined-name changes, explicit external references, broken <code>#REF!</code> formulas, calculation-setting changes, and macro payload changes. For each changed cell, it follows statically visible A1-style and ordinary named-range dependencies and reports downstream formula cells with deterministic shortest-path samples.</p>
+      <p><a href="https://github.com/SybilGambleyyu/formulafence">FormulaFence</a> compares two <code>.xlsx</code> or <code>.xlsm</code> workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility and defined-name changes, Excel-table definition changes, explicit external references, broken <code>#REF!</code> formulas, calculation-setting changes, and macro payload changes. For each changed cell, it follows statically visible A1-style, ordinary named-range, and supported table dependencies with deterministic shortest-path samples.</p>
 
       <pre><code>formulafence check approved.xlsx candidate.xlsx \
   --policy formulafence.yml \
@@ -43,7 +43,9 @@
         <p>When the underlying workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds such a warning can be rejected with <code>no_new_parser_warnings</code>.</p>
       </div>
 
-      <p>FormulaFence 0.3.0 resolves ordinary workbook and sheet-local names whose destinations are static A1 ranges, so those names no longer disappear from an impact path. It also makes the remaining blind spots concrete: profiles identify unresolved range tokens and dynamic <code>INDIRECT</code>/<code>OFFSET</code> formulas, while a diff can flag newly introduced instances. Teams that need a strict boundary can enable <code>no_new_unresolved_references</code> and <code>no_new_dynamic_references</code> in policy.</p>
+      <p>FormulaFence 0.4.0 resolves ordinary workbook and sheet-local names whose destinations are static A1 ranges, plus a conservative set of fully qualified Excel-table references: table names, static columns or contiguous column ranges, and <code>#All</code>/<code>#Data</code>/<code>#Headers</code>/<code>#Totals</code> regions. Profiles now inventory the table definitions behind those references, and a diff emits <code>FF013</code> if one changes. Teams can make that a hard boundary with <code>no_table_definition_changes</code>.</p>
+
+      <p>It also makes the remaining blind spots concrete: profiles identify unresolved range tokens and dynamic <code>INDIRECT</code>/<code>OFFSET</code> formulas, while a diff can flag newly introduced instances. This-row (<code>@</code>) table references and complex table syntax remain explicit coverage notes instead of guessed dependency paths. Teams that need a stricter boundary can enable <code>no_new_unresolved_references</code> and <code>no_new_dynamic_references</code> in policy.</p>
 
       <h2>Testing the uncomfortable case</h2>
 
@@ -51,11 +53,13 @@
 
       <p>On a local, non-distributed copy, changing one exit-waterfall formula to a number produced a formula-to-value finding and traced 330 downstream formula cells. The starter policy rejected both the override and its impact. The details and constraints are recorded in the project’s <a href="https://github.com/SybilGambleyyu/formulafence/blob/main/docs/validation.md">validation notes</a>.</p>
 
+      <p>I also checked the table path against a public structured-reference workbook: FormulaFence identified its one table and 15 table-reference formulas with no unresolved tokens. Changing one table data cell on a local copy traced 16 downstream formulas, including a table total and an output outside the table.</p>
+
       <h2>What it does not claim</h2>
 
-      <p>FormulaFence does not calculate Excel, prove a financial model correct, or resolve every dynamic reference. Named formulas, structured table references, and features such as <code>INDIRECT</code> can still hide dependencies from static analysis. It calls that out rather than inventing a graph it cannot justify. Material models still need a qualified owner, a recalculation path in the approved spreadsheet engine, and independent review.</p>
+      <p>FormulaFence does not calculate Excel, prove a financial model correct, or resolve every dynamic reference. Named formulas, this-row and complex table references, and features such as <code>INDIRECT</code> can still hide dependencies from static analysis. It calls that out rather than inventing a graph it cannot justify. Material models still need a qualified owner, a recalculation path in the approved spreadsheet engine, and independent review.</p>
 
-      <p>The current release is <a href="https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.3.0">FormulaFence 0.3.0 on GitHub</a> under MIT. If your team keeps significant logic in a workbook, I hope it makes the next change easier to understand before it becomes difficult to unwind.</p>
+      <p>The current release is <a href="https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.4.0">FormulaFence 0.4.0 on GitHub</a> under MIT. If your team keeps significant logic in a workbook, I hope it makes the next change easier to understand before it becomes difficult to unwind.</p>
     </main>
     <footer class="site-footer"><div class="shell"><p><a href="/">← Back to SybilGambleyyu</a></p></div></footer>
   </body>
