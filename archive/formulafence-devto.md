@@ -10,7 +10,7 @@ That tool is [FormulaFence](https://github.com/SybilGambleyyu/formulafence), an 
 
 ## Put the control at the merge boundary
 
-FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility, defined-name, Excel-table, data-validation, and conditional-formatting control changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
+FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility, defined-name, Excel-table, data-validation, conditional-formatting, and operational protection-control changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
 
 For every changed cell, it follows statically visible A1-style, ordinary named-range, safely expandable formula-defined-name and named `LAMBDA`, direct dynamic-array spill anchors, fixed legacy-CSE outputs, currently observed dynamic-array output members, `LET`/inline-`LAMBDA`, supported table, and direct 3-D worksheet dependencies and reports downstream formula cells with deterministic shortest-path samples.
 
@@ -39,6 +39,7 @@ rules:
   no_table_definition_changes: true
   no_data_validation_changes: true
   no_conditional_formatting_changes: true
+  no_protection_changes: true
   no_3d_reference_scope_changes: true
   max_downstream_impact: 100
 
@@ -70,9 +71,11 @@ Version 0.14.0 makes data-entry controls reviewable too. A worksheet validation 
 
 Version 0.15.0 makes visual exception controls reviewable too. Conditional formatting determines the colors, badges, and warnings a reviewer sees; moving a rule in worksheet-wide precedence, toggling `Stop If True`, changing a threshold, or changing a data bar can alter that signal without changing an ordinary formula cell. FormulaFence reads those rules directly from OOXML, resolves differential styles instead of comparing unstable `dxfId` values, and retains opaque Excel-2010 extension fragments when a reader library cannot model them. It normalizes equivalent defaults, leading `=` spelling, priority-number gaps, and known extension-link GUIDs, then emits `FF021` for a real change. Profiles redact criteria and raw visual XML; the local report keeps full before/after evidence. Teams can make the boundary fail closed with `no_conditional_formatting_changes` (`FFP021`). It does not evaluate a rule or predict Excel’s final rendered display. The behavior was checked against Microsoft’s public [conditional-formatting examples](https://support.microsoft.com/en-us/excel/use-conditional-formatting-to-highlight-information-in-excel) and an independently maintained XlsxWriter Excel-2010 data-bar fixture.
 
+Version 0.16.0 extends that review surface to operational protection. A workbook can keep its formulas intact while losing a structure lock, allowing a protected input to become editable, hiding a formula differently, or changing who may edit a protected range. FormulaFence now reads workbook, worksheet, dialog-sheet, and chart-sheet protection directly from OOXML; records protected-range target areas; and inventories sparse direct `locked`/`hidden` assignments without expanding whole rows or columns. It normalizes equivalent worksheet-action defaults and emits `FF022` for a real change; `no_protection_changes` makes that a fail-closed `FFP022` boundary. Password verifiers, hashes, salts, protected-range names, and security descriptors never enter a profile or report—only safe presence metadata and private change fingerprints do. This is deliberately not a claim that Excel protection is encryption, authentication, or a full access-control system. The behavior was checked against Excel-produced public protection examples and controlled protected-range and chart-sheet fixtures.
+
 It now traces common row-scoped forms without turning a row calculation into a dependency on every row of a table. Inside a table data cell, `[@[Sales Amount]]` and `[Sales Amount]` bind to that row. Qualified forms such as `Sales[@Amount]` and `Sales[[#This Row],[Amount]:[Rate]]` bind to the named table's data row even from an adjacent cell. That follows [Excel's documented structured-reference semantics](https://support.microsoft.com/en-us/excel/using-structured-references-with-excel-tables); header, total, cross-sheet, ambiguous, and complex bracket-escape cases remain coverage notes instead of guessed dependency paths.
 
-One practical safeguard is coverage visibility. When the workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds one can be rejected with `no_new_parser_warnings`. Profiles also list unresolved range tokens, dynamic reference functions, spill references, explicit implicit intersection, dynamic and unclassified array anchors, observed dynamic output-member relationships, and formulas the tokenizer could not inspect; a change can be rejected with `no_new_unresolved_references`, `no_new_dynamic_references`, `no_new_spill_references`, `no_new_dynamic_array_output_references`, `no_new_implicit_intersections`, `no_array_formula_semantics_changes`, `no_data_validation_changes`, `no_conditional_formatting_changes`, or `no_new_tokenization_failures`.
+One practical safeguard is coverage visibility. When the workbook parser encounters an OOXML extension it cannot fully interpret, FormulaFence records a coverage note. A candidate that adds one can be rejected with `no_new_parser_warnings`. Profiles also list unresolved range tokens, dynamic reference functions, spill references, explicit implicit intersection, dynamic and unclassified array anchors, observed dynamic output-member relationships, and formulas the tokenizer could not inspect; a change can be rejected with `no_new_unresolved_references`, `no_new_dynamic_references`, `no_new_spill_references`, `no_new_dynamic_array_output_references`, `no_new_implicit_intersections`, `no_array_formula_semantics_changes`, `no_data_validation_changes`, `no_conditional_formatting_changes`, `no_protection_changes`, or `no_new_tokenization_failures`.
 
 ## Test beyond toy files
 
@@ -90,4 +93,4 @@ FormulaFence does not calculate Excel or prove a financial model correct. Materi
 
 But a review process should at least make it hard to silently replace a formula with a number. That is the narrow, useful boundary FormulaFence is built to enforce.
 
-The current release is [FormulaFence 0.15.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.15.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
+The current release is [FormulaFence 0.16.0 on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.16.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
