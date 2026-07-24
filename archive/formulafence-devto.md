@@ -12,7 +12,7 @@ That tool is [FormulaFence](https://github.com/SybilGambleyyu/formulafence), an 
 
 FormulaFence compares two workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility and defined-name changes, explicit external references, broken `#REF!` formulas, calculation-setting changes, and macro payload changes.
 
-For every changed cell, it follows statically visible A1-style dependencies and reports downstream formula cells.
+For every changed cell, it follows statically visible A1-style dependencies and reports downstream formula cells with deterministic shortest-path samples.
 
 ```bash
 formulafence check approved.xlsx candidate.xlsx \
@@ -55,4 +55,4 @@ FormulaFence does not calculate Excel or prove a financial model correct. Materi
 
 But a review process should at least make it hard to silently replace a formula with a number. That is the narrow, useful boundary FormulaFence is built to enforce.
 
-The first public release is [available on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.1.1). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).
+The current release is [available on GitHub](https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.2.0). The canonical version of this post lives at [sybilgambleyyu.github.io/posts/formulafence.html](https://sybilgambleyyu.github.io/posts/formulafence.html).

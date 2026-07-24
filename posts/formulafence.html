@@ -30,7 +30,7 @@
 
       <h2>The merge boundary is where trust gets practical</h2>
 
-      <p><a href="https://github.com/SybilGambleyyu/formulafence">FormulaFence</a> compares two <code>.xlsx</code> or <code>.xlsm</code> workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility and defined-name changes, explicit external references, broken <code>#REF!</code> formulas, calculation-setting changes, and macro payload changes. For each changed cell, it follows statically visible A1-style dependencies and reports downstream formula cells.</p>
+      <p><a href="https://github.com/SybilGambleyyu/formulafence">FormulaFence</a> compares two <code>.xlsx</code> or <code>.xlsm</code> workbooks without executing formulas or macros. It detects formula-to-value substitutions, formula changes, sheet visibility and defined-name changes, explicit external references, broken <code>#REF!</code> formulas, calculation-setting changes, and macro payload changes. For each changed cell, it follows statically visible A1-style dependencies and reports downstream formula cells with deterministic shortest-path samples.</p>
 
       <pre><code>formulafence check approved.xlsx candidate.xlsx \
   --policy formulafence.yml \
@@ -53,7 +53,7 @@
 
       <p>FormulaFence does not calculate Excel, prove a financial model correct, or resolve every dynamic reference. Functions such as <code>INDIRECT</code>, named formulas, structured table references, and other Excel features can hide dependencies from static analysis. It calls that out rather than inventing a graph it cannot justify. Material models still need a qualified owner, a recalculation path in the approved spreadsheet engine, and independent review.</p>
 
-      <p>The first release is <a href="https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.1.1">available on GitHub</a> under MIT. If your team keeps significant logic in a workbook, I hope it makes the next change easier to understand before it becomes difficult to unwind.</p>
+      <p>The current release is <a href="https://github.com/SybilGambleyyu/formulafence/releases/tag/v0.2.0">available on GitHub</a> under MIT. If your team keeps significant logic in a workbook, I hope it makes the next change easier to understand before it becomes difficult to unwind.</p>
     </main>
     <footer class="site-footer"><div class="shell"><p><a href="/">← Back to SybilGambleyyu</a></p></div></footer>
   </body>
